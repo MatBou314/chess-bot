@@ -85,13 +85,34 @@ function newAffBoard() {
         boardElem: null,
         squareSelect: null,
         orientation: true,
+        history: [],
+        backMoves: 0,
     }
     initAffBoard(obj);
     return obj;
 }
 
 function playMove(affBoard, move) {
-    affBoard.game.move(move);
+    const {game, backMoves, history} = affBoard;
+    game.move(move);
+    history.splice(history.length - backMoves - 1, backMoves);
+    affBoard.backMoves = 0;
+    history.push(move);
+}
+
+function undoMove(affBoard) {
+    const {game, backMoves, history} = affBoard;
+    if (backMoves === history.length) return;
+    affBoard.backMoves++;
+    game.undo();
+    updateAffBoard(affBoard);
+}
+
+function redoMove(affBoard) {
+    const {game, backMoves, history} = affBoard;
+    if (backMoves === 0) return;
+    const move = history[history.length - affBoard.backMoves--];
+    game.move(move);
     updateAffBoard(affBoard);
 }
 
@@ -117,8 +138,38 @@ function handleClick(affBoard, square) {
             affBoard.squareSelect = idx;
         }
     }
-    console.log(affBoard.squareSelect);
     updateAffBoard(affBoard);
 }
 
+
+// ========== MODE HANDLING ========== //
+// ==========               ========== //
+
+const modes = {
+    pvp: "play",
+    pvb: "play bot",
+    bvb: "Bot vs bot",
+}
+
 const mainAffBoard = newAffBoard();
+let MODE = "pvp";
+const menu = newElem("menu");
+body.appendChild(menu);
+updateMenu();
+
+
+function updateMenu() {
+    menu.replaceChildren();
+    for (const mode in modes) {
+        if (mode === MODE) continue;
+        const option = newElem("option");
+        option.textContent = modes[mode];
+        menu.appendChild(option);
+    }
+}
+
+document.addEventListener("keydown", (e) => {
+    const {key} = e;
+    if (key === "ArrowLeft") undoMove(mainAffBoard);
+    else if (key === "ArrowRight") redoMove(mainAffBoard);
+})

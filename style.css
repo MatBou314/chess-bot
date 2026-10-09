@@ -9,12 +9,13 @@
 
 body {
     background-color: rgb(150, 0, 255);
+    margin-left: 300px;
 }
 
 .board-container {
     display: flex;
     height: var(--board-size);
-    width: calc(var(--board-size) * 2);
+    width: calc(var(--board-size) * 1.8);
     background-color: var(--board-container-color);
     align-items: center;
     border: 12px solid rgb(115, 0, 205);
@@ -41,7 +42,6 @@ body {
     text-align: center;
 }
 
-/* caractère unicode*/
 .piece {
     font-size: calc(var(--cell-size) * 0.76);
     display: flex;
@@ -61,8 +61,34 @@ body {
 }
 
 .menu {
-    display: fixed;
-    height: 100%;
-    width: fit-content;
-    background-color: rgb(80, 77, 76)
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  top: 0;
+  left: 0;
+  width: auto;
+  height: 100%;
+  background-color: rgb(100, 100, 100);
+  color: black;
+  justify-content: flex-start;
+  align-items: stretch;
+  border-right: 4px solid rgb(77, 0, 153);
+  z-index: 100;
+  padding: 20px;
+}
+
+.menu .option {
+  display: block;
+  color: black;
+  font-weight: 600;
+  font-size: clamp(10px, 2.3vw, 50px);
+  transition: all 0.3s;
+  padding: 10px 20px;
+  cursor: pointer;
+}
+
+.menu .option:hover {
+  color: rgb(55, 3, 87);
+  background-color: rgb(110, 110, 110);
+  border-radius: 15px;
 }
