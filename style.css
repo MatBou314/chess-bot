@@ -29,7 +29,6 @@ body {
     border: 10px solid var(--border-color);
     border-radius: 10px;
     margin-left: 20px;
-
 }
 
 .cell {
@@ -55,8 +54,18 @@ body {
     border: 8px solid rgb(0, 107, 110);
 }
 
-.piece:hover {
+.cell.select .piece {
+    transform: scale(1.1);
+    transition: transform 0.2s ease-in-out;
+}
+
+.cell.select .piece:hover {
     transform: scale(1.2);
+    transition: transform 0.2s ease-in-out;
+}
+
+.piece:hover {
+    transform: scale(1.15);
     transition: transform 0.2s ease-in-out;
 }
 

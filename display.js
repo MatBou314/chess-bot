@@ -164,8 +164,15 @@ function updateMenu() {
         if (mode === MODE) continue;
         const option = newElem("option");
         option.textContent = modes[mode];
+        option.addEventListener("mousedown", () => changeMode(mode));
         menu.appendChild(option);
     }
+}
+
+function changeMode(newMode) {
+    if (newMode === MODE) return;
+    MODE = newMode;
+    updateMenu();
 }
 
 document.addEventListener("keydown", (e) => {
