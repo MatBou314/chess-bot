@@ -18,8 +18,11 @@ body {
     width: calc(var(--board-size) * 1.8);
     background-color: var(--board-container-color);
     align-items: center;
+    justify-content: space-between;
     border: 12px solid rgb(115, 0, 205);
     border-radius: 30px;
+    flex-direction: row;
+    padding: 40px;
 }
 .board {
     display: grid;
@@ -28,7 +31,6 @@ body {
     grid-template-rows: repeat(8, var(--cell-size));
     border: 10px solid var(--border-color);
     border-radius: 10px;
-    margin-left: 20px;
 }
 
 .cell {
@@ -69,6 +71,14 @@ body {
     transition: transform 0.2s ease-in-out;
 }
 
+.legal-move {
+    position: absolute;
+    border: 5px solid rgb(66, 81, 82);
+    border-radius: 50%;
+    width: calc(var(--cell-size) * 0.15);
+    height: calc(var(--cell-size) * 0.15);
+}
+
 .menu {
   position: fixed;
   display: flex;
@@ -100,4 +110,16 @@ body {
   color: rgb(55, 3, 87);
   background-color: rgb(110, 110, 110);
   border-radius: 15px;
+}
+
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(85, 80, 80);
+  width: clamp(100px, 28vw, 500px);
+  align-self: stretch;
+  margin-left: 6vw;
+  font-size: 2vw;
+  padding: 10px 
 }

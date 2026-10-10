@@ -39,7 +39,7 @@ function createBoardElem(affBoard) {
         cell.appendChild(piece);
         cell.style.backgroundColor = color;
         boardElem.appendChild(cell);
-        cell.addEventListener("click", () => handleClick(affBoard, i));
+        cell.addEventListener("mousedown", () => handleClick(affBoard, i));
     }
     return boardElem;
 }
@@ -49,12 +49,20 @@ function initAffBoard(affBoard) {
     const boardElem = createBoardElem(affBoard);
     container.appendChild(boardElem);
     affBoard.boardElem = boardElem;
+    const panelElem = newElem("panel");
+    container.appendChild(panelElem);
+    affBoard.panelElem = panelElem;
     body.appendChild(container);
     updateAffBoard(affBoard);
 }
 
 function updateAffBoard(affBoard) {
     const {orientation} = affBoard;
+    let legalMoves = [];
+    if (affBoard.squareSelect !== null) {
+        const square = orientation ? affBoard.squareSelect : 63 - affBoard.squareSelect;
+        legalMoves = affBoard.game.moves({square: squareName(square), verbose: true});
+    }
     for (let square = 0; square < 64; square++) {
         const idx = orientation ? square : 63-square;
         const cell = affBoard.boardElem.children[idx];
@@ -71,6 +79,10 @@ function updateAffBoard(affBoard) {
         // select
         if (affBoard.squareSelect === idx) cell.classList.add("select");
         else cell.classList.remove("select");
+
+        // legal moves
+        if (legalMoves.some(move => move.to === squareName(idx))) cell.appendChild(newElem("legal-move"));
+        else cell.replaceChildren(pieceElem);
     }
 }
 
@@ -83,6 +95,7 @@ function newAffBoard() {
     const obj = {
         game: new Chess(),
         boardElem: null,
+        panelElem: null,
         squareSelect: null,
         orientation: true,
         history: [],
@@ -105,6 +118,7 @@ function undoMove(affBoard) {
     if (backMoves === history.length) return;
     affBoard.backMoves++;
     game.undo();
+    affBoard.squareSelect = null;
     updateAffBoard(affBoard);
 }
 
@@ -113,6 +127,7 @@ function redoMove(affBoard) {
     if (backMoves === 0) return;
     const move = history[history.length - affBoard.backMoves--];
     game.move(move);
+    affBoard.squareSelect = null;
     updateAffBoard(affBoard);
 }
 
@@ -153,9 +168,11 @@ const modes = {
 
 const mainAffBoard = newAffBoard();
 let MODE = "pvp";
+
 const menu = newElem("menu");
 body.appendChild(menu);
 updateMenu();
+
 
 
 function updateMenu() {
