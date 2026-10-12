@@ -1,4 +1,5 @@
 import { Chess } from "https://esm.sh/chess.js";
+import { botList } from "./allBots.js";
 const {body} = document;
 
 const piecesImg = { 
@@ -31,32 +32,6 @@ function newElem(...classNames) {
 }
 
 
-
-
-function updateMenu() {
-    menu.replaceChildren();
-    for (const mode in modes) {
-        if (mode === MODE) continue;
-        const option = newElem("option");
-        option.textContent = modes[mode];
-        option.addEventListener("mousedown", () => changeMode(mode));
-        menu.appendChild(option);
-    }
-}
-
-function changeMode(newMode) {
-    if (newMode === MODE) return;
-    MODE = newMode;
-    updateMenu();
-}
-
-document.addEventListener("keydown", (e) => {
-    const {key} = e;
-    if (key === "ArrowLeft") undoMove(mainAffBoard);
-    else if (key === "ArrowRight") redoMove(mainAffBoard);
-})
-
-
 // ======= BOARD ======= //
 
 function createBoardElem(affBoard) {
@@ -71,57 +46,6 @@ function createBoardElem(affBoard) {
         cell.addEventListener("mousedown", () => handleClick(affBoard, i));
     }
     return boardElem;
-}
-
-// ======= PANEL ======= //
-
-function addControls(panelElem) {
-    const container = newElem("control-container");
-    const leftArrow = newElem("control-button");
-    const rightArrow = newElem("control-button");
-    leftArrow.textContent = "←";
-    rightArrow.textContent = "→";
-    leftArrow.addEventListener("mousedown", () => undoMove(mainAffBoard));
-    rightArrow.addEventListener("mousedown", () => redoMove(mainAffBoard));
-    container.appendChild(leftArrow);
-    container.appendChild(rightArrow);
-    const orientationButton = newElem("control-button");
-    orientationButton.textContent = "↻";
-    orientationButton.addEventListener("mousedown", () => changeOrientation(mainAffBoard));
-    container.appendChild(orientationButton);
-    panelElem.appendChild(container);
-}
-
-const panelStructure = {
-    pvp: [addControls],
-    pvb: [addControls],
-    bvb: [addControls],
-}
-
-function updatePanel(affBoard) {
-    const structure = panelStructure[MODE];
-    const {panelElem} = affBoard;
-    panelElem.replaceChildren();
-    for (const part of structure) {
-        part(panelElem);
-    }
-}
-
-function initAffBoard(affBoard, controlled=true) {
-    const boardElem = createBoardElem(affBoard);
-    const container = newElem("game-container");
-    body.appendChild(container);
-    container.appendChild(boardElem);
-    
-    if (controlled) {
-        const panelElem = newElem("panel");
-        container.appendChild(panelElem);
-        affBoard.panelElem = panelElem;
-    } 
-    affBoard.boardElem = boardElem;
-    
-    updatePanel(affBoard)
-    updateBoard(affBoard);
 }
 
 function updateBoard(affBoard) {
@@ -154,6 +78,68 @@ function updateBoard(affBoard) {
     }
 }
 
+// ======= PANEL ======= //
+
+function addControls(panelElem, affBoard) {
+    const container = newElem("control-container");
+    const leftArrow = newElem("control-button");
+    const rightArrow = newElem("control-button");
+    leftArrow.textContent = "←";
+    rightArrow.textContent = "→";
+    leftArrow.addEventListener("mousedown", () => undoMove(affBoard));
+    rightArrow.addEventListener("mousedown", () => redoMove(affBoard));
+    container.appendChild(leftArrow);
+    container.appendChild(rightArrow);
+    const orientationButton = newElem("control-button");
+    orientationButton.textContent = "↻";
+    orientationButton.addEventListener("mousedown", () => changeOrientation(affBoard));
+    container.appendChild(orientationButton);
+    panelElem.appendChild(container);
+}
+
+function addBotControls(panelElem, affBoard) {
+    const {bots} = affBoard;
+    const botPanel = newElem("bot-controls");
+    panelElem.appendChild(botPanel);
+}
+
+const panelStructure = {
+    pvp: [addControls],
+    pvb: [addBotControls, addControls],
+    bvb: [addBotControls, addBotControls, addControls],
+}
+
+function updatePanel(affBoard) {
+    if (!affBoard.panelElem) return;
+    const structure = panelStructure[MODE];
+    const {panelElem, bots} = affBoard;
+    bots.w.controlled = false;
+    bots.b.controlled = false;
+    panelElem.replaceChildren();
+    for (const part of structure) {
+        part(panelElem, affBoard);
+    }
+}
+
+function initAffBoard(affBoard, controlled=true) {
+    const boardElem = createBoardElem(affBoard);
+    const container = newElem("game-container");
+    body.appendChild(container);
+    container.appendChild(boardElem);
+    
+    if (controlled) {
+        const panelElem = newElem("panel");
+        container.appendChild(panelElem);
+        affBoard.panelElem = panelElem;
+    } 
+    affBoard.boardElem = boardElem;
+    
+    updatePanel(affBoard)
+    updateBoard(affBoard);
+}
+
+
+
 function changeOrientation(affBoard) {
     affBoard.orientation = !affBoard.orientation;
     updateBoard(affBoard);
@@ -168,6 +154,10 @@ function newAffBoard(controlled=true) {
         orientation: true,
         history: [],
         backMoves: 0,
+        bots: {
+            w: newBot(),
+            b: newBot(),
+        }
     }
     initAffBoard(obj, controlled);
     return obj;
@@ -240,3 +230,65 @@ const mainAffBoard = newAffBoard(true);
 const menu = newElem("menu");
 body.appendChild(menu);
 updateMenu();
+
+function updateMenu() {
+    menu.replaceChildren();
+    for (const mode in modes) {
+        if (mode === MODE) continue;
+        const option = newElem("option");
+        option.textContent = modes[mode];
+        option.addEventListener("mousedown", () => changeMode(mode));
+        menu.appendChild(option);
+    }
+}
+
+function changeMode(newMode) {
+    if (newMode === MODE) return;
+    MODE = newMode;
+    updateMenu();
+    updatePanel(mainAffBoard);
+
+}
+
+document.addEventListener("keydown", (e) => {
+    const {key} = e;
+    if (key === "ArrowLeft") undoMove(mainAffBoard);
+    else if (key === "ArrowRight") redoMove(mainAffBoard);
+})
+
+// ========== WORKER ========== //
+
+function newBot() {
+    return {
+        id: Object.keys(botList)[0],
+        maxTime: 2000,
+        isOn: false,
+        controlled: false,
+    }
+}
+
+let worker;
+function initWorker() {
+  worker = new Worker("worker.js", {type: "module"});
+  worker.onmessage = function(event) {
+    const { type, depth, eval: moveEval, move, requestId, error } = event.data;
+
+    if (type === "analysisUpdate") {
+      analysisInfo.depth = depth;
+      analysisInfo.eval = moveEval;
+      analysisInfo.move = move;
+      return;
+    }
+
+    if (!moveRequests.has(requestId)) return;
+    const {resolve, reject} = moveRequests.get(requestId);
+    if (error) reject(error);
+    else {
+      moveRequests.delete(requestId);
+      resolve(move);
+    }
+  }
+}
+initWorker();
+
+console.log(mainAffBoard.game.turn());
