@@ -31,6 +31,13 @@ function newElem(...classNames) {
     return el;
 }
 
+function createText(str, size="2vw", ) {
+    const el = newElem("text");
+    el.textContent = str;
+    el.style.fontSize = size;
+    return el;
+}
+
 
 // ======= BOARD ======= //
 
@@ -97,10 +104,42 @@ function addControls(panelElem, affBoard) {
     panelElem.appendChild(container);
 }
 
+function switchBots(affBoard) {
+    const {bots} = affBoard;
+    const temp = bots.w;
+    bots.w = bots.b;
+    bots.b = temp;
+}
+
 function addBotControls(panelElem, affBoard) {
     const {bots} = affBoard;
+    const bot = affBoard.bots.w.controlled ? bots.w : bots.b;
     const botPanel = newElem("bot-controls");
     panelElem.appendChild(botPanel);
+
+    botPanel.appendChild(createText("Bot choice: ", "1.5vw"));
+    const botChoice = document.createElement("select");
+    for (const name in botList) {
+        const option = document.createElement("option");
+        option.textContent = name;
+        option.value = name;
+        botChoice.appendChild(option);
+    }
+    botPanel.appendChild(botChoice);
+    botChoice.addEventListener("change", () => {
+        bot.id = botChoice.value;
+    })
+
+    botPanel.appendChild(createText("\n", "1vw"));
+
+    botPanel.appendChild(createText("Max Time: \n", "1.5vw"))
+    const maxTime = document.createElement("input");
+    maxTime.value = bot.maxTime;
+    botPanel.appendChild(maxTime);
+    maxTime.addEventListener("change", () => {
+        bot.maxTime = maxTime.value;
+    })
+
 }
 
 const panelStructure = {

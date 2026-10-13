@@ -7,7 +7,7 @@ function randomBot(board, maxTime) {
 }
 
 const botList = { 
-    randomBot: randomBot,
+    "random bot": randomBot,
 }
 
 export { botList };
