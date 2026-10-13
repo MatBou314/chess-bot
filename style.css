@@ -209,6 +209,7 @@ select option {
     background-color: rgb(70, 70, 70);
     padding: 6px;
     margin-top: 8px;
+    margin-bottom: 8px;
     border-radius: 10px;
     border: 5px solid rgb(0, 0, 0);
     white-space: pre-line;

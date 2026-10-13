@@ -113,7 +113,7 @@ function switchBots(affBoard) {
 
 function addBotControls(panelElem, affBoard) {
     const {bots} = affBoard;
-    const bot = affBoard.bots.w.controlled ? bots.w : bots.b;
+    const bot = affBoard.bots.w.controlled ? bots.b : bots.w;
     const botPanel = newElem("bot-controls");
     panelElem.appendChild(botPanel);
 
@@ -139,14 +139,25 @@ function addBotControls(panelElem, affBoard) {
     maxTime.addEventListener("change", () => {
         bot.maxTime = Number(maxTime.value);
     })
-
     bot.controlled = true;
+}
+
+function addBotPause(panelElem, affBoard) {
+    const botPause = newElem("control-button");
+    botPause.appendChild(createText("\n", "1vw"));
+    botPause.textContent = affBoard.botPause ? "▶ Resume Bot" : "⏸ Pause Bot";
+    botPause.addEventListener("mousedown", () => {
+        affBoard.botPause = !affBoard.botPause;
+        botPause.textContent = affBoard.botPause ? "▶ Resume Bot" : "⏸ Pause Bot";
+        nextTurn(affBoard);
+    })
+    panelElem.appendChild(botPause);
 }
 
 const panelStructure = {
     pvp: [addControls],
-    pvb: [addBotControls, addControls],
-    bvb: [addBotControls, addBotControls, addControls],
+    pvb: [addBotControls, addBotPause, addControls],
+    bvb: [addBotControls, addBotControls, addBotPause, addControls],
 }
 
 function updatePanel(affBoard) {
@@ -178,8 +189,6 @@ function initAffBoard(affBoard, controlled=true) {
     updateBoard(affBoard);
 }
 
-
-
 function changeOrientation(affBoard) {
     affBoard.orientation = !affBoard.orientation;
     updateBoard(affBoard);
@@ -197,7 +206,8 @@ function newAffBoard(controlled=true) {
         bots: {
             w: newBot(),
             b: newBot(),
-        }
+        },
+        botPause: true,
     }
     initAffBoard(obj, controlled);
     return obj;
@@ -242,7 +252,7 @@ function handleClick(affBoard, square) {
         affBoard.squareSelect = null;
     }
     else {
-        if (affBoard.bots[game.turn()].isOn) affBoard.squareSelect = idx;
+        if (affBoard.bots[game.turn()].isOn && !affBoard.botPause) affBoard.squareSelect = idx;
         else {
             try {
                 const move = {
@@ -367,12 +377,12 @@ function cancelAllBotRequests() {
 }
 
 function getBotMove(affBoard) {
-  return new Promise((resolve, reject) => {
-    const {game, bots} = affBoard;
-    const bot = bots[game.turn()];
-    const requestId = Date.now() + Math.random();
+    return new Promise((resolve, reject) => {
+        const {game, bots} = affBoard;
+        const bot = bots[game.turn()];
+        const requestId = Date.now() + Math.random();
     moveRequests.set(requestId, {resolve, reject});
-    let maxTime = bot.maxTime;
+    let maxTime = MODE !== "analysis" ? bot.maxTime : Infinity;
     worker.postMessage({
       requestId,
       botId: bot.id,
@@ -383,15 +393,16 @@ function getBotMove(affBoard) {
 }
 
 async function playBotMove(affBoard) {
-  try {
-    const move = await getBotMove(affBoard);
-    if (move) {
-      playMove(affBoard, move);
+    if (affBoard.botPause) return;
+    try {
+        const move = await getBotMove(affBoard);
+        if (move) {
+        playMove(affBoard, move);
+        }
+    } catch (e) {
+      console.error(e);
     }
-  } catch (e) {
-    console.error(e);
-  }
-  updateBoard(affBoard)
+    updateBoard(affBoard);
 }
 
 function nextTurn(affBoard) {
