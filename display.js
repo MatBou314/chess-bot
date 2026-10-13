@@ -137,9 +137,10 @@ function addBotControls(panelElem, affBoard) {
     maxTime.value = bot.maxTime;
     botPanel.appendChild(maxTime);
     maxTime.addEventListener("change", () => {
-        bot.maxTime = maxTime.value;
+        bot.maxTime = Number(maxTime.value);
     })
 
+    bot.controlled = true;
 }
 
 const panelStructure = {
@@ -208,6 +209,7 @@ function playMove(affBoard, move) {
     history.splice(history.length - backMoves - 1, backMoves);
     affBoard.backMoves = 0;
     history.push(move);
+    nextTurn(affBoard);
 }
 
 function undoMove(affBoard) {
@@ -217,6 +219,7 @@ function undoMove(affBoard) {
     game.undo();
     affBoard.squareSelect = null;
     updateBoard(affBoard);
+    nextTurn(affBoard);
 }
 
 function redoMove(affBoard) {
@@ -226,6 +229,7 @@ function redoMove(affBoard) {
     game.move(move);
     affBoard.squareSelect = null;
     updateBoard(affBoard);
+    nextTurn(affBoard);
 }
 
 function handleClick(affBoard, square) {
@@ -238,16 +242,19 @@ function handleClick(affBoard, square) {
         affBoard.squareSelect = null;
     }
     else {
-        try {
-            const move = {
-                from: squareName(squareSelect),
-                to: squareName(idx),
-                promotion: "q",
+        if (affBoard.bots[game.turn()].isOn) affBoard.squareSelect = idx;
+        else {
+            try {
+                const move = {
+                    from: squareName(squareSelect),
+                    to: squareName(idx),
+                    promotion: "q",
+                }
+                playMove(affBoard, move);
+                affBoard.squareSelect = null;
+            } catch (e) {
+                affBoard.squareSelect = idx;
             }
-            playMove(affBoard, move);
-            affBoard.squareSelect = null;
-        } catch (e) {
-            affBoard.squareSelect = idx;
         }
     }
     updateBoard(affBoard);
@@ -286,7 +293,20 @@ function changeMode(newMode) {
     MODE = newMode;
     updateMenu();
     updatePanel(mainAffBoard);
-
+    const {bots} = mainAffBoard;
+    if (newMode === "pvp") {
+        bots.w.isOn = false;
+        bots.b.isOn = false;
+    } else
+    if (newMode === "pvb") {
+        bots.w.isOn = false;
+        bots.b.isOn = true;
+    } else 
+    if (newMode === "bvb") {
+        bots.w.isOn = true;
+        bots.b.isOn = true;
+    }
+    nextTurn(mainAffBoard);
 }
 
 document.addEventListener("keydown", (e) => {
@@ -295,7 +315,8 @@ document.addEventListener("keydown", (e) => {
     else if (key === "ArrowRight") redoMove(mainAffBoard);
 })
 
-// ========== WORKER ========== //
+// ========== BOT WORKER ========== //
+// ==========            ========== //
 
 function newBot() {
     return {
@@ -306,6 +327,12 @@ function newBot() {
     }
 }
 
+const analysisInfo = {
+    depth: 0,
+    eval: 0,
+    move: 0,
+}
+const moveRequests = new Map();
 let worker;
 function initWorker() {
   worker = new Worker("worker.js", {type: "module"});
@@ -330,4 +357,46 @@ function initWorker() {
 }
 initWorker();
 
-console.log(mainAffBoard.game.turn());
+function cancelAllBotRequests() {
+  for (const [, { reject }] of moveRequests) {
+    reject("Cancelled");
+  }
+  moveRequests.clear();
+  worker.terminate();
+  initWorker();
+}
+
+function getBotMove(affBoard) {
+  return new Promise((resolve, reject) => {
+    const {game, bots} = affBoard;
+    const bot = bots[game.turn()];
+    const requestId = Date.now() + Math.random();
+    moveRequests.set(requestId, {resolve, reject});
+    let maxTime = bot.maxTime;
+    worker.postMessage({
+      requestId,
+      botId: bot.id,
+      fen: game.fen(),
+      maxTime
+    });
+  });
+}
+
+async function playBotMove(affBoard) {
+  try {
+    const move = await getBotMove(affBoard);
+    if (move) {
+      playMove(affBoard, move);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+  updateBoard(affBoard)
+}
+
+function nextTurn(affBoard) {
+    const {game, bots} = affBoard;
+    if (game.isGameOver()) return;
+    const bot = bots[game.turn()];
+    if (bot.isOn) playBotMove(affBoard);
+}

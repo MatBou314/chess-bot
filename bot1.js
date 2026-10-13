@@ -1,5 +1,6 @@
-function randomBot(board, maxTime) {
-    const moves = board.moves();
+function randomBot(game, maxTime) {
+    console.log("random bot thinking...")
+    const moves = game.moves();
     const randomIndex = Math.floor(Math.random() * moves.length);
     const startTime = Date.now();
     while (Date.now() - startTime < maxTime) {}
