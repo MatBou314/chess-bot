@@ -381,15 +381,15 @@ function getBotMove(affBoard) {
         const {game, bots} = affBoard;
         const bot = bots[game.turn()];
         const requestId = Date.now() + Math.random();
-    moveRequests.set(requestId, {resolve, reject});
-    let maxTime = MODE !== "analysis" ? bot.maxTime : Infinity;
-    worker.postMessage({
-      requestId,
-      botId: bot.id,
-      fen: game.fen(),
-      maxTime
+        moveRequests.set(requestId, {resolve, reject});
+        let maxTime = MODE !== "analysis" ? bot.maxTime : Infinity;
+        worker.postMessage({
+            requestId,
+            botId: bot.id,
+            fen: game.fen(),
+            maxTime
+        });
     });
-  });
 }
 
 async function playBotMove(affBoard) {
